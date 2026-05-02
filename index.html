@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NT GROUP - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Audiowide&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-main: 'Anuphan', sans-serif;
+            --font-logo: 'Audiowide', cursive;
+            --surface-color: #FFFFFF;
+            --text-primary: #1D1D1F;
+            --text-secondary: #86868B;
+            --border-color: #E5E5EA;
+            --primary-navy: #000080;
+            --alert-red: #E02424;
+            --success-green: #34C759;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-main); background-color: var(--surface-color); color: var(--text-primary); overflow-x: hidden; }
+        
+        /* Toast Popup */
+        #smart-toast {
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            padding: 14px 24px; border-radius: 50px; box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            display: flex; align-items: center; gap: 12px; z-index: 9999;
+            transition: top 0.4s ease; border: 1px solid rgba(0,0,0,0.05);
+        }
+        #smart-toast.show { top: 40px; }
+        .toast-icon svg { width: 22px; height: 22px; fill: none; stroke-width: 2.5; }
+        #smart-toast.is-error .toast-icon svg { stroke: var(--alert-red); }
+        #smart-toast.is-success .toast-icon svg { stroke: var(--success-green); }
+
+        /* Layout */
+        .layout-wrapper { display: flex; min-height: 100vh; width: 100%; }
+        .image-section { flex: 1.2; position: relative; background: url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat; }
+        .image-section::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,30,0.5), rgba(0,0,60,0.2)); }
+        
+        .form-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 40px; background: #fff; }
+        .form-container { width: 100%; max-width: 380px; }
+        .brand-logo { font-family: var(--font-logo); font-size: 2.6rem; color: var(--primary-navy); margin-bottom: 6px; }
+        .subtitle { color: var(--text-secondary); margin-bottom: 40px; }
+
+        .input-group { position: relative; margin-bottom: 28px; }
+        .input-control { width: 100%; padding: 18px; border: 2px solid var(--border-color); border-radius: 16px; font-size: 1.1rem; outline: none; transition: 0.3s; }
+        .input-control:focus { border-color: var(--primary-navy); }
+        .input-label { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); background: #fff; padding: 0 6px; color: var(--text-secondary); transition: 0.3s; pointer-events: none; }
+        .input-control:focus ~ .input-label, .input-control:not(:placeholder-shown) ~ .input-label { top: 0; font-size: 0.85rem; color: var(--primary-navy); font-weight: 600; }
+        
+        .char-counter { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.9rem; }
+        .char-counter.complete { color: var(--success-green); font-weight: bold; }
+
+        .btn-submit { width: 100%; padding: 18px; background: var(--primary-navy); color: #fff; border: none; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,128,0.15); }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+        @media (max-width: 768px) { .image-section { display: none; } .form-section { padding-top: 15vh; align-items: flex-start; } }
+    </style>
+</head>
+<body>
+
+    <div id="smart-toast">
+        <div class="toast-icon" id="toast-icon-container"></div>
+        <span id="toast-msg" style="font-weight: 600; margin-left: 10px;"></span>
+    </div>
+
+    <div class="layout-wrapper">
+        <div class="image-section"></div>
+        <div class="form-section">
+            <div class="form-container" id="form-container">
+                <h1 class="brand-logo">NT GROUP</h1>
+                <p class="subtitle">เข้าสู่ระบบด้วยข้อมูลส่วนตัวผู้เช่า</p>
+                
+                <div class="input-group">
+                    <input type="text" id="id-card" class="input-control" placeholder=" " autocomplete="off">
+                    <label class="input-label">เลขประจำตัวประชาชน</label>
+                    <div class="char-counter" id="id-counter">0/13</div>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="phone" class="input-control" placeholder=" " autocomplete="off">
+                    <label class="input-label">เบอร์โทรศัพท์มือถือ</label>
+                    <div class="char-counter" id="phone-counter">0/10</div>
+                </div>
+                
+                <button class="btn-submit" id="login-btn">เข้าสู่ระบบ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const iconError = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+        const iconSuccess = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+        let toastTimer;
+
+        function showToast(msgText, type = 'error') {
+            clearTimeout(toastTimer);
+            const toast = document.getElementById('smart-toast');
+            document.getElementById('toast-msg').innerText = msgText;
+            toast.className = type === 'error' ? 'is-error' : 'is-success';
+            document.getElementById('toast-icon-container').innerHTML = type === 'error' ? iconError : iconSuccess;
+            
+            toast.classList.add('show');
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // จัดฟอร์แมตตัวเลข
+        const idInput = document.getElementById('id-card'), idCounter = document.getElementById('id-counter');
+        const phoneInput = document.getElementById('phone'), phoneCounter = document.getElementById('phone-counter');
+
+        idInput.addEventListener('input', function() {
+            let val = this.value.replace(/\D/g, '').substring(0, 13);
+            let fmt = '';
+            if(val.length > 0) fmt += val.substring(0,1);
+            if(val.length > 1) fmt += '-' + val.substring(1,5);
+            if(val.length > 5) fmt += '-' + val.substring(5,10);
+            if(val.length > 10) fmt += '-' + val.substring(10,12);
+            if(val.length > 12) fmt += '-' + val.substring(12,13);
+            this.value = fmt;
+            idCounter.innerText = `${val.length}/13`;
+            idCounter.className = val.length === 13 ? 'char-counter complete' : 'char-counter';
+        });
+
+        phoneInput.addEventListener('input', function() {
+            let val = this.value.replace(/\D/g, '').substring(0, 10);
+            let fmt = '';
+            if(val.length > 0) fmt += val.substring(0,3);
+            if(val.length > 3) fmt += '-' + val.substring(3,6);
+            if(val.length > 6) fmt += '-' + val.substring(6,10);
+            this.value = fmt;
+            phoneCounter.innerText = `${val.length}/10`;
+            phoneCounter.className = val.length === 10 ? 'char-counter complete' : 'char-counter';
+        });
+
+        // จำลองระบบ Login (บันทึกข้อมูลแล้วโยนไปหน้า Dashboard)
+        document.getElementById('login-btn').addEventListener('click', function() {
+            const idVal = idInput.value.replace(/\D/g, '');
+            const phoneVal = phoneInput.value.replace(/\D/g, '');
+            
+            if(idVal.length !== 13 || phoneVal.length !== 10) {
+                showToast("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง", "error");
+                const form = document.getElementById('form-container');
+                form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake');
+                return;
+            }
+
+            this.innerText = "กำลังเข้าสู่ระบบ...";
+            
+            setTimeout(() => {
+                showToast("เข้าสู่ระบบสำเร็จ!", "success");
+                
+                // จำลองข้อมูลและบันทึกข้ามไฟล์ด้วย localStorage
+                const mockData = {
+                    id_card: idVal,
+                    room: 'NT-101',
+                    name_th: 'นางสาว ลูกค้า คนสวย',
+                    name_en: 'Customer Beautiful',
+                    dob: '27/11/2550',
+                    address: 'หอพัก NT GROUP 123 ถ.วิภาวดี กทม.',
+                    image: 'https://ui-avatars.com/api/?name=ลูกค้า+คนสวย&background=000080&color=fff&size=200'
+                };
+                localStorage.setItem('nt_user_data', JSON.stringify(mockData));
+
+                // เด้งไปไฟล์ dashboard.html
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 800);
+            }, 800);
+        });
+    </script>
+</body>
+</html>
