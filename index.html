@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NT GROUP - Login</title>
+    <!-- นำเข้าฟอนต์ Anuphan (ข้อความ) และ Audiowide (โลโก้/ลายน้ำ) -->
     <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Audiowide&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --font-main: 'Anuphan', sans-serif;
@@ -17,159 +19,325 @@
             --alert-red: #E02424;
             --success-green: #34C759;
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: var(--font-main); background-color: var(--surface-color); color: var(--text-primary); overflow-x: hidden; }
+
+        body { 
+            font-family: var(--font-main); 
+            background-color: var(--surface-color); 
+            color: var(--text-primary); 
+            overflow: hidden; 
+            -webkit-font-smoothing: antialiased;
+        }
         
-        /* Toast Popup */
+        /* =========================================
+           Popup Toast
+           ========================================= */
         #smart-toast {
             position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
-            padding: 14px 24px; border-radius: 50px; box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(20px);
+            padding: 14px 28px; border-radius: 50px; box-shadow: 0 10px 40px rgba(0,0,0,0.12);
             display: flex; align-items: center; gap: 12px; z-index: 9999;
-            transition: top 0.4s ease; border: 1px solid rgba(0,0,0,0.05);
+            transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(0,0,0,0.05);
         }
         #smart-toast.show { top: 40px; }
         .toast-icon svg { width: 22px; height: 22px; fill: none; stroke-width: 2.5; }
         #smart-toast.is-error .toast-icon svg { stroke: var(--alert-red); }
         #smart-toast.is-success .toast-icon svg { stroke: var(--success-green); }
+        #toast-msg { font-weight: 600; font-size: 1rem; }
 
-        /* Layout */
+        /* =========================================
+           Layout & Split Screen
+           ========================================= */
         .layout-wrapper { display: flex; min-height: 100vh; width: 100%; }
-        .image-section { flex: 1.2; position: relative; background: url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat; }
-        .image-section::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,30,0.5), rgba(0,0,60,0.2)); }
         
-        .form-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 40px; background: #fff; }
+        /* --- ฝั่งซ้าย: รูปภาพและลายน้ำ NT G --- */
+        .image-section { 
+            flex: 1.2; position: relative; overflow: hidden; background-color: #000; 
+        }
+        
+        .bg-image {
+            position: absolute; top: -5%; left: -5%; width: 110%; height: 110%;
+            background: url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+            animation: slowZoom 30s infinite alternate ease-in-out;
+            opacity: 0.8;
+        }
+        @keyframes slowZoom { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+
+        /* การไล่สีทับภาพให้ดูลึกและแพง */
+        .bg-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(0,0,30,0.85) 0%, rgba(0,0,80,0.4) 100%);
+            backdrop-filter: blur(3px);
+            z-index: 1;
+        }
+
+        /* 👑 ลายน้ำ NT G แพทเทิร์นแบบแบรนด์เนม */
+        .nt-pattern-container {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            display: flex; flex-wrap: wrap; justify-content: center; align-content: center;
+            gap: 60px 80px; transform: rotate(-30deg); z-index: 2;
+            pointer-events: none; opacity: 0.07; /* ปรับความจางตรงนี้ */
+            animation: floatPattern 60s linear infinite;
+        }
+        .nt-pattern-container span {
+            font-family: var(--font-logo); font-size: 2.5rem; color: #FFFFFF;
+            letter-spacing: 3px; user-select: none;
+        }
+        @keyframes floatPattern {
+            0% { transform: rotate(-30deg) translate(0, 0); }
+            100% { transform: rotate(-30deg) translate(-200px, -200px); }
+        }
+
+        /* --- ฝั่งขวา: ฟอร์มล็อกอิน --- */
+        .form-section { 
+            flex: 1; display: flex; justify-content: center; align-items: center; 
+            padding: 40px; background: var(--surface-color); z-index: 3;
+            box-shadow: -20px 0 50px rgba(0,0,0,0.05);
+        }
+        
+        .form-entrance-layer { animation: fadeUpForm 0.8s ease 0.2s both; width: 100%; display: flex; justify-content: center;}
+        @keyframes fadeUpForm { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+
         .form-container { width: 100%; max-width: 380px; }
-        .brand-logo { font-family: var(--font-logo); font-size: 2.6rem; color: var(--primary-navy); margin-bottom: 6px; }
-        .subtitle { color: var(--text-secondary); margin-bottom: 40px; }
+        .brand-logo { font-family: var(--font-logo); font-size: 2.8rem; color: var(--primary-navy); margin-bottom: 4px; letter-spacing: 1.5px;}
+        .subtitle { color: var(--text-secondary); margin-bottom: 40px; font-weight: 500; font-size: 1.05rem;}
 
-        .input-group { position: relative; margin-bottom: 28px; }
-        .input-control { width: 100%; padding: 18px; border: 2px solid var(--border-color); border-radius: 16px; font-size: 1.1rem; outline: none; transition: 0.3s; }
-        .input-control:focus { border-color: var(--primary-navy); }
-        .input-label { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); background: #fff; padding: 0 6px; color: var(--text-secondary); transition: 0.3s; pointer-events: none; }
-        .input-control:focus ~ .input-label, .input-control:not(:placeholder-shown) ~ .input-label { top: 0; font-size: 0.85rem; color: var(--primary-navy); font-weight: 600; }
+        /* --- Input --- */
+        .input-group { position: relative; margin-bottom: 32px; }
+        .input-control { 
+            width: 100%; padding: 18px 20px; border: 2px solid var(--border-color); 
+            border-radius: 16px; font-family: var(--font-main); font-size: 1.15rem; font-weight: 600;
+            outline: none; transition: all 0.3s ease; color: var(--text-primary);
+        }
         
-        .char-counter { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.9rem; }
-        .char-counter.complete { color: var(--success-green); font-weight: bold; }
+        .input-label { 
+            position: absolute; left: 16px; top: 50%; transform: translateY(-50%); 
+            background: #fff; padding: 0 6px; color: var(--text-secondary); 
+            transition: all 0.3s ease; pointer-events: none; font-weight: 500;
+        }
+        .input-control:focus ~ .input-label, .input-control:not(:placeholder-shown) ~ .input-label { 
+            top: 0; font-size: 0.9rem; color: var(--primary-navy); font-weight: 700; 
+        }
+        
+        .char-counter { 
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%); 
+            color: var(--text-secondary); font-size: 0.95rem; font-weight: 600; transition: 0.3s;
+        }
 
-        .btn-submit { width: 100%; padding: 18px; background: var(--primary-navy); color: #fff; border: none; border-radius: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,128,0.15); }
+        /* 🔴 สถานะ Error (ไม่ครบ) */
+        .input-group.error .input-control { border-color: var(--alert-red); box-shadow: 0 0 0 4px rgba(224, 36, 36, 0.1);}
+        .input-group.error .input-label { color: var(--alert-red); }
+        .input-group.error .char-counter { color: var(--alert-red); }
+
+        /* ✅ สถานะ Complete (ครบถ้วน) */
+        .input-group.complete .input-control { border-color: var(--success-green); box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.1);}
+        .input-group.complete .input-label { color: var(--success-green); }
+        .input-group.complete .char-counter { color: var(--success-green); font-weight: 700;}
+
+        /* --- Default Focus (ตอนพิมพ์แต่ยังไม่ตรวจสอบสถานะ) --- */
+        .input-group:not(.error):not(.complete) .input-control:focus { 
+            border-color: var(--primary-navy); box-shadow: 0 0 0 4px rgba(0, 0, 128, 0.08);
+        }
+
+        /* --- ปุ่มกด --- */
+        .btn-submit { 
+            width: 100%; padding: 20px; background: var(--primary-navy); color: #fff; 
+            border: none; border-radius: 16px; font-size: 1.15rem; font-weight: 700; 
+            cursor: pointer; transition: 0.2s; letter-spacing: 0.5px; margin-top: 8px;
+        }
+        .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,128,0.25); }
+        .btn-submit:active { transform: translateY(0); }
+
         .shake { animation: shake 0.4s; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 
-        @media (max-width: 768px) { .image-section { display: none; } .form-section { padding-top: 15vh; align-items: flex-start; } }
+        @media (max-width: 768px) { 
+            .image-section { display: none; } 
+            .form-section { padding-top: 15vh; align-items: flex-start; } 
+            .form-container { max-width: 100%; }
+        }
     </style>
 </head>
 <body>
 
+    <!-- Popup Toast มินิมอล -->
     <div id="smart-toast">
         <div class="toast-icon" id="toast-icon-container"></div>
-        <span id="toast-msg" style="font-weight: 600; margin-left: 10px;"></span>
+        <span id="toast-msg"></span>
     </div>
 
     <div class="layout-wrapper">
-        <div class="image-section"></div>
+        
+        <!-- ฝั่งซ้าย: พื้นหลัง และ ลายน้ำ NT G -->
+        <div class="image-section">
+            <div class="bg-image"></div>
+            <div class="bg-overlay"></div>
+            <!-- กล่องสำหรับใส่แพทเทิร์น NT G ผ่าน JS -->
+            <div class="nt-pattern-container" id="pattern-box"></div>
+        </div>
+
+        <!-- ฝั่งขวา: ฟอร์ม -->
         <div class="form-section">
-            <div class="form-container" id="form-container">
-                <h1 class="brand-logo">NT GROUP</h1>
-                <p class="subtitle">เข้าสู่ระบบด้วยข้อมูลส่วนตัวผู้เช่า</p>
-                
-                <div class="input-group">
-                    <input type="text" id="id-card" class="input-control" placeholder=" " autocomplete="off">
-                    <label class="input-label">เลขประจำตัวประชาชน</label>
-                    <div class="char-counter" id="id-counter">0/13</div>
+            <div class="form-entrance-layer">
+                <div class="form-container" id="form-container">
+                    <h1 class="brand-logo">NT GROUP</h1>
+                    <p class="subtitle">เข้าสู่ระบบด้วยข้อมูลส่วนตัวผู้เช่า</p>
+                    
+                    <!-- ID Card (บังคับแป้นตัวเลขด้วย type="tel") -->
+                    <div class="input-group" id="group-id">
+                        <!-- maxlenght 17 เพราะรวมขีดด้วย (13 ตัวเลข + 4 ขีด = 17) -->
+                        <input type="tel" id="id-card" class="input-control" placeholder=" " autocomplete="off" maxlength="17">
+                        <label class="input-label">เลขประจำตัวประชาชน</label>
+                        <div class="char-counter" id="id-counter">0/13</div>
+                    </div>
+                    
+                    <!-- Phone (บังคับแป้นตัวเลขด้วย type="tel") -->
+                    <div class="input-group" id="group-phone">
+                        <!-- maxlength 12 เพราะรวมขีด (10 ตัวเลข + 2 ขีด = 12) -->
+                        <input type="tel" id="phone" class="input-control" placeholder=" " autocomplete="off" maxlength="12">
+                        <label class="input-label">เบอร์โทรศัพท์มือถือ</label>
+                        <div class="char-counter" id="phone-counter">0/10</div>
+                    </div>
+                    
+                    <button class="btn-submit" id="login-btn">เข้าสู่ระบบ</button>
                 </div>
-                
-                <div class="input-group">
-                    <input type="text" id="phone" class="input-control" placeholder=" " autocomplete="off">
-                    <label class="input-label">เบอร์โทรศัพท์มือถือ</label>
-                    <div class="char-counter" id="phone-counter">0/10</div>
-                </div>
-                
-                <button class="btn-submit" id="login-btn">เข้าสู่ระบบ</button>
             </div>
         </div>
     </div>
 
     <script>
-        const iconError = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
-        const iconSuccess = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
-        let toastTimer;
-
-        function showToast(msgText, type = 'error') {
-            clearTimeout(toastTimer);
-            const toast = document.getElementById('smart-toast');
-            document.getElementById('toast-msg').innerText = msgText;
-            toast.className = type === 'error' ? 'is-error' : 'is-success';
-            document.getElementById('toast-icon-container').innerHTML = type === 'error' ? iconError : iconSuccess;
-            
-            toast.classList.add('show');
-            toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // จัดฟอร์แมตตัวเลข
-        const idInput = document.getElementById('id-card'), idCounter = document.getElementById('id-counter');
-        const phoneInput = document.getElementById('phone'), phoneCounter = document.getElementById('phone-counter');
-
-        idInput.addEventListener('input', function() {
-            let val = this.value.replace(/\D/g, '').substring(0, 13);
-            let fmt = '';
-            if(val.length > 0) fmt += val.substring(0,1);
-            if(val.length > 1) fmt += '-' + val.substring(1,5);
-            if(val.length > 5) fmt += '-' + val.substring(5,10);
-            if(val.length > 10) fmt += '-' + val.substring(10,12);
-            if(val.length > 12) fmt += '-' + val.substring(12,13);
-            this.value = fmt;
-            idCounter.innerText = `${val.length}/13`;
-            idCounter.className = val.length === 13 ? 'char-counter complete' : 'char-counter';
-        });
-
-        phoneInput.addEventListener('input', function() {
-            let val = this.value.replace(/\D/g, '').substring(0, 10);
-            let fmt = '';
-            if(val.length > 0) fmt += val.substring(0,3);
-            if(val.length > 3) fmt += '-' + val.substring(3,6);
-            if(val.length > 6) fmt += '-' + val.substring(6,10);
-            this.value = fmt;
-            phoneCounter.innerText = `${val.length}/10`;
-            phoneCounter.className = val.length === 10 ? 'char-counter complete' : 'char-counter';
-        });
-
-        // จำลองระบบ Login (บันทึกข้อมูลแล้วโยนไปหน้า Dashboard)
-        document.getElementById('login-btn').addEventListener('click', function() {
-            const idVal = idInput.value.replace(/\D/g, '');
-            const phoneVal = phoneInput.value.replace(/\D/g, '');
-            
-            if(idVal.length !== 13 || phoneVal.length !== 10) {
-                showToast("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง", "error");
-                const form = document.getElementById('form-container');
-                form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake');
-                return;
+        (function() {
+            // --- 1. สร้างแพทเทิร์น "NT G" เต็มจอฝั่งซ้าย ---
+            const patternBox = document.getElementById('pattern-box');
+            // วนลูปสร้างคำว่า NT G 150 คำ ให้เต็มแผ่น
+            for(let i = 0; i < 150; i++) {
+                const span = document.createElement('span');
+                span.innerText = 'NT G';
+                patternBox.appendChild(span);
             }
 
-            this.innerText = "กำลังเข้าสู่ระบบ...";
-            
-            setTimeout(() => {
-                showToast("เข้าสู่ระบบสำเร็จ!", "success");
-                
-                // จำลองข้อมูลและบันทึกข้ามไฟล์ด้วย localStorage
-                const mockData = {
-                    id_card: idVal,
-                    room: 'NT-101',
-                    name_th: 'นางสาว ลูกค้า คนสวย',
-                    name_en: 'Customer Beautiful',
-                    dob: '27/11/2550',
-                    address: 'หอพัก NT GROUP 123 ถ.วิภาวดี กทม.',
-                    image: 'https://ui-avatars.com/api/?name=ลูกค้า+คนสวย&background=000080&color=fff&size=200'
-                };
-                localStorage.setItem('nt_user_data', JSON.stringify(mockData));
+            // --- 2. Toast Popup (ไร้อิโมจิ) ---
+            const iconError = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+            const iconSuccess = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+            let toastTimer;
 
-                // เด้งไปไฟล์ dashboard.html
+            function showToast(msgText, type = 'error') {
+                clearTimeout(toastTimer);
+                const toast = document.getElementById('smart-toast');
+                document.getElementById('toast-msg').innerText = msgText;
+                toast.className = type === 'error' ? 'is-error' : 'is-success';
+                document.getElementById('toast-icon-container').innerHTML = type === 'error' ? iconError : iconSuccess;
+                
+                toast.classList.add('show');
+                toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+            }
+
+            function triggerShake() {
+                const form = document.getElementById('form-container');
+                form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake');
+            }
+
+            // --- 3. ระบบบังคับตัวเลข & เช็คสี (แดง/เขียว) เรียลไทม์ ---
+            const idInput = document.getElementById('id-card');
+            const idCounter = document.getElementById('id-counter');
+            const groupId = document.getElementById('group-id');
+
+            const phoneInput = document.getElementById('phone');
+            const phoneCounter = document.getElementById('phone-counter');
+            const groupPhone = document.getElementById('group-phone');
+
+            idInput.addEventListener('input', function() {
+                // บังคับให้เป็นตัวเลขเท่านั้น (ลบตัวอักษรทิ้งหมด)
+                let val = this.value.replace(/\D/g, '').substring(0, 13);
+                
+                // จัดฟอร์แมตขีด
+                let fmt = '';
+                if(val.length > 0) fmt += val.substring(0,1);
+                if(val.length > 1) fmt += '-' + val.substring(1,5);
+                if(val.length > 5) fmt += '-' + val.substring(5,10);
+                if(val.length > 10) fmt += '-' + val.substring(10,12);
+                if(val.length > 12) fmt += '-' + val.substring(12,13);
+                
+                this.value = fmt; // อัปเดตช่องกรอก
+                idCounter.innerText = `${val.length}/13`; // อัปเดตตัวนับ
+                
+                // เช็คสี (ว่าง = ปกติ, ไม่ครบ 13 = แดง, ครบ 13 = เขียว)
+                if (val.length === 0) {
+                    groupId.className = 'input-group';
+                } else if (val.length < 13) {
+                    groupId.className = 'input-group error';
+                } else {
+                    groupId.className = 'input-group complete';
+                }
+            });
+
+            phoneInput.addEventListener('input', function() {
+                // บังคับตัวเลขเท่านั้น
+                let val = this.value.replace(/\D/g, '').substring(0, 10);
+                
+                let fmt = '';
+                if(val.length > 0) fmt += val.substring(0,3);
+                if(val.length > 3) fmt += '-' + val.substring(3,6);
+                if(val.length > 6) fmt += '-' + val.substring(6,10);
+                
+                this.value = fmt;
+                phoneCounter.innerText = `${val.length}/10`;
+                
+                // เช็คสี (ว่าง = ปกติ, ไม่ครบ 10 = แดง, ครบ 10 = เขียว)
+                if (val.length === 0) {
+                    groupPhone.className = 'input-group';
+                } else if (val.length < 10) {
+                    groupPhone.className = 'input-group error';
+                } else {
+                    groupPhone.className = 'input-group complete';
+                }
+            });
+
+            // --- 4. ปุ่มเข้าสู่ระบบ ---
+            document.getElementById('login-btn').addEventListener('click', function() {
+                const idVal = idInput.value.replace(/\D/g, '');
+                const phoneVal = phoneInput.value.replace(/\D/g, '');
+                
+                // ถ้าข้อมูลไม่ครบ เด้งสั่นและแจ้งเตือน
+                if(idVal.length !== 13 || phoneVal.length !== 10) {
+                    showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
+                    
+                    // บังคับให้เป็นสีแดงถ้ากดยืนยันตอนไม่ครบ
+                    if(idVal.length < 13 && idVal.length > 0) groupId.className = 'input-group error';
+                    if(phoneVal.length < 10 && phoneVal.length > 0) groupPhone.className = 'input-group error';
+                    
+                    triggerShake();
+                    return;
+                }
+
+                this.innerText = "กำลังเข้าสู่ระบบ...";
+                this.disabled = true;
+                
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 800);
-            }, 800);
-        });
+                    showToast("เข้าสู่ระบบสำเร็จ!", "success");
+                    
+                    // บันทึกข้อมูลของลูกค้าลง localStorage (ส่งให้หน้า Dashboard)
+                    const mockData = {
+                        id_card: idVal,
+                        room: 'WU-6901',
+                        name_th: 'นาย ไชยภัทร คำเกิด',
+                        name_en: 'Chaiyapat Khamkoet',
+                        dob: '27/11/2550',
+                        address: 'มหาวิทยาลัยวลัยลักษณ์ สำนักวิชาวิทยาศาสตร์ สาขาคณิตศาสตร์',
+                        image: 'https://ui-avatars.com/api/?name=ไชยภัทร+คำเกิด&background=000080&color=fff&size=200'
+                    };
+                    localStorage.setItem('nt_user_data', JSON.stringify(mockData));
+
+                    // เปลี่ยนหน้า
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 800);
+                }, 1000);
+            });
+
+        })();
     </script>
 </body>
 </html>
